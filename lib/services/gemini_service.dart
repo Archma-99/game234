@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/weather_model.dart';
+import 'package:intl/intl.dart';
+import 'package:weather/weather.dart';
 
-// Note: This service requires the 'http' package.
+// Note: This service requires the 'http' package and the 'weather' package.
 // It is also designed to work with the Gemini AI API.
 // You will need a Gemini API key.
 
@@ -16,10 +17,10 @@ class GeminiService {
 
     final prompt = """
     Today's weather:
-    - Condition: ${weather.mainCondition}
-    - Temperature: ${weather.temperature.toStringAsFixed(0)}°C
+    - Condition: ${weather.weatherMain}
+    - Temperature: ${weather.temperature?.celsius?.toStringAsFixed(0)}°C
     - Humidity: ${weather.humidity}%
-    - Wind Speed: ${weather.windSpeed.toStringAsFixed(1)} km/h
+    - Wind Speed: ${weather.windSpeed} m/s
 
     Give me one short, friendly, and helpful piece of advice (max 1-2 sentences) for the user. Include a relevant emoji.
     """;
@@ -41,17 +42,59 @@ class GeminiService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseBody = jsonDecode(response.body);
-        // Navigate through the JSON to get the text.
-        // The exact path might vary, adjust if needed based on actual API response.
         final advice = responseBody['candidates'][0]['content']['parts'][0]['text'];
         return advice.trim();
       } else {
-        // Log the error for debugging
         print('Gemini API Error: ${response.statusCode} ${response.body}');
         return "Could not generate AI advice at this time.";
       }
     } catch (e) {
       print('Error calling Gemini API: $e');
+      return "Could not connect to AI service.";
+    }
+  }
+
+  Future<String> getMultiDayAdvice(List<Weather> forecasts) async {
+    final url = Uri.parse("$_baseUrl?key=$_apiKey");
+
+    // Take the next 3 days for the summary
+    final forecastSubset = forecasts.take(3).toList();
+
+    String forecastString = "";
+    for (var f in forecastSubset) {
+      forecastString += "- ${DateFormat('EEEE').format(f.date!)}: ${f.weatherMain}, max temp ${f.tempMax?.celsius?.toStringAsFixed(0)}°C\n";
+    }
+
+    final prompt = """
+    Here is the weather forecast for the next 3 days:
+    $forecastString
+
+    Based on this, give me a short, helpful summary (max 2 sentences) for the user. For example, "The next three days will be hotter than usual; plan light clothing."
+    """;
+
+    final requestBody = jsonEncode({
+      "contents": [{
+        "parts": [{
+          "text": prompt
+        }]
+      }]
+    });
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: requestBody,
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+        final advice = responseBody['candidates'][0]['content']['parts'][0]['text'];
+        return advice.trim();
+      } else {
+        return "Could not generate AI summary.";
+      }
+    } catch (e) {
       return "Could not connect to AI service.";
     }
   }

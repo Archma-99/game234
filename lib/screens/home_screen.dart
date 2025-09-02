@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../models/weather_model.dart';
-import '../models/forecast_model.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:weather/weather.dart'; // Note: Add weather: ^3.2.1 to pubspec.yaml
+
+import '../main.dart'; // To access global settingsService
 import '../services/gemini_service.dart';
 import '../services/notification_service.dart';
+import '../services/weather_service.dart';
 import '../widgets/forecast_list.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // Note: Add flutter_animate to pubspec.yaml
-
-// TODO: import 'package:intl/intl.dart'; // Add to pubspec.yaml for date formatting
+import 'forecast_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -15,13 +16,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ApiService _apiService = ApiService();
+  final WeatherService _weatherService = WeatherService();
   final GeminiService _geminiService = GeminiService();
   final TextEditingController _searchController = TextEditingController();
 
   Weather? _weather;
-  List<Forecast> _forecast = [];
-  double _chanceOfRain = 0.0;
+  List<Weather> _forecast = [];
+  List<Weather> _hourlyForecast = [];
   String _aiAdvice = '';
   bool _isLoading = true;
   bool _isFetchingAdvice = false;
@@ -30,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchWeather("Tokyo"); // Default city from new design
+    _fetchWeather("Tokyo");
   }
 
   @override
@@ -47,36 +48,43 @@ class _HomeScreenState extends State<HomeScreen> {
       _aiAdvice = '';
     });
     try {
-      final coordinates = await _apiService.getCoordinates(cityName);
-      final lat = coordinates['lat']!;
-      final lon = coordinates['lon']!;
-      final weatherData = await _apiService.getWeatherData(lat, lon);
-      final newWeather = Weather.fromJson(weatherData['current'], cityName);
-      final dailyData = weatherData['daily'] as List;
-      final newForecast = dailyData.map((d) => Forecast.fromJson(d)).toList();
-      final chanceOfRain = (dailyData[0]['pop'] as num).toDouble();
-      if (newForecast.isNotEmpty) newForecast.removeAt(0);
+      // Fetch all data in parallel
+      final results = await Future.wait([
+        _weatherService.getCurrentWeather(cityName),
+        _weatherService.getFiveDayForecast(cityName),
+      ]);
+
+      final newWeather = results[0] as Weather;
+      final newForecast = results[1] as List<Weather>;
 
       setState(() {
         _weather = newWeather;
         _forecast = newForecast;
-        _chanceOfRain = chanceOfRain;
+        // The 5-day forecast from the package is also the hourly forecast
+        _hourlyForecast = newForecast;
         _isLoading = false;
         _isFetchingAdvice = true;
       });
 
-      final advice = await _geminiService.getWeatherAdvice(newWeather);
-      if (advice.isNotEmpty && !advice.contains("Could not")) {
-        await NotificationService.showWeatherAdvice('Weather Tip!', advice);
+      // AI Advice and Notifications
+      if (settingsService.dailyNotifications) {
+        final advice = await _geminiService.getWeatherAdvice(newWeather);
+        if (advice.isNotEmpty && !advice.contains("Could not")) {
+          await NotificationService.showWeatherAdvice('Weather Tip!', advice);
+        }
+        setState(() => _aiAdvice = advice);
+      } else {
+        setState(() => _aiAdvice = '');
       }
-      setState(() {
-        _aiAdvice = advice;
-        _isFetchingAdvice = false;
-      });
+
+      // The `weather` package does not support severe weather alerts directly.
+      // This functionality is lost in the refactor.
+
+      setState(() => _isFetchingAdvice = false);
 
     } catch (e) {
       setState(() {
-        _errorMessage = "Could not find weather for '$cityName'. Please try another city.";
+        _errorMessage = "Could not find weather for '$cityName'.";
         _isLoading = false;
         _isFetchingAdvice = false;
       });
@@ -112,17 +120,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTopBar() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text('10:24', style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500)),
-        Row(
-          children: [
-            Icon(Icons.signal_cellular_alt, size: 20, color: Colors.grey[700]),
-            SizedBox(width: 4),
-            Icon(Icons.wifi, size: 20, color: Colors.grey[700]),
-            SizedBox(width: 4),
-            Icon(Icons.battery_full, size: 20, color: Colors.grey[700]),
-          ],
+        IconButton(
+          icon: Icon(Icons.settings, color: Colors.grey[700]),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SettingsScreen()),
+            ).then((_) {
+              if (_weather?.areaName != null) {
+                _fetchWeather(_weather!.areaName!);
+              }
+            });
+          },
         ),
       ],
     );
@@ -136,10 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
         prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
         filled: true,
         fillColor: Colors.grey[200],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide.none,
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30.0), borderSide: BorderSide.none),
         contentPadding: EdgeInsets.symmetric(vertical: 16.0),
       ),
       onSubmitted: (value) {
@@ -159,36 +167,58 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                _weather!.cityName,
+                _weather!.areaName ?? '',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.grey[800]),
               ),
               SizedBox(height: 4),
               Text(
-                'Chance of rain: ${(_chanceOfRain * 100).toStringAsFixed(0)}%',
+                'Chance of rain: ${(_forecast.first.rain ?? 0).toStringAsFixed(0)} mm/h',
                 style: TextStyle(fontSize: 16, color: Colors.grey[500]),
               ),
               SizedBox(height: 16),
               Text(
-                '${_weather!.temperature.toStringAsFixed(0)}°',
+                '${_weather!.temperature?.celsius?.toStringAsFixed(0) ?? ''}°C',
                 style: TextStyle(fontSize: 96, fontWeight: FontWeight.w300, color: Colors.grey[800]),
               ),
               Image.network(
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuD-1YfI3h3Tsd9qg6tP5sXk-UjL-R3Vw4j3K3a2O3R2b6m3N5l8Y7c4D9h7A8r2T1k7l3o5W8x0s4r4v9p9z9g3a9f0b8d7c6e5a4b3c2d1',
+                'https://openweathermap.org/img/wn/${_weather!.weatherIcon}@4x.png',
                 width: 128,
                 height: 128,
                 errorBuilder: (c, o, s) => Icon(Icons.wb_cloudy, size: 128, color: Colors.grey[400]),
               ),
               SizedBox(height: 8),
               Text(
-                _weather!.mainCondition,
+                _weather!.weatherMain ?? '',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: Colors.grey[800]),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Wind: ${_weather!.windSpeed?.toStringAsFixed(1)} m/s',
+                style: TextStyle(fontSize: 16, color: Colors.grey[500]),
               ),
               SizedBox(height: 16),
               _buildAiAdviceCard(),
             ],
           ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
         ),
-        if (_forecast.isNotEmpty) ForecastList(forecast: _forecast),
+        if (_forecast.isNotEmpty)
+          GestureDetector(
+            onTap: () {
+              if (_weather != null && _forecast.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ForecastScreen(
+                      weather: _weather!,
+                      dailyForecast: _forecast,
+                      hourlyForecast: _hourlyForecast,
+                    ),
+                  ),
+                );
+              }
+            },
+            child: ForecastList(forecast: _forecast),
+          ),
       ],
     );
   }
@@ -197,33 +227,19 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_isFetchingAdvice) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2.0, color: Colors.grey[400]),
-        ),
+        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.0, color: Colors.grey[400])),
       );
     }
-    if (_aiAdvice.isEmpty || _aiAdvice.contains("Could not")) {
-      return SizedBox.shrink();
-    }
+    if (_aiAdvice.isEmpty || _aiAdvice.contains("Could not")) return SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         color: Colors.blue[100]?.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(color: Colors.blue[200]!, width: 1),
+        border: Border.all(color: Colors.blue[200]!),
       ),
       child: Center(
-        child: Text(
-          _aiAdvice,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.blue[800],
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
-        ),
+        child: Text(_aiAdvice, textAlign: TextAlign.center, style: TextStyle(color: Colors.blue[800], fontWeight: FontWeight.w500, fontSize: 14)),
       ),
     );
   }

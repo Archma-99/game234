@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // Note: Add flutter_animate to pubspec.yaml
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
-import '../models/forecast_model.dart';
+import 'package:weather/weather.dart';
 
 class ForecastList extends StatelessWidget {
-  final List<Forecast> forecast;
+  final List<Weather> forecast;
 
   ForecastList({required this.forecast});
 
-  IconData _getIconForCondition(String condition) {
+  IconData _getIconForCondition(String? condition) {
+    if (condition == null) return Icons.wb_sunny;
     switch (condition.toLowerCase()) {
       case 'rain':
         return Icons.water_drop;
@@ -29,31 +30,42 @@ class ForecastList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The 5-day forecast is often more than 6 items because it's by 3-hour intervals.
+    // We need to group by day and take the forecast for the "main" part of the day.
+    // For simplicity here, we'll just take the first forecast for each day.
+    final Map<int, Weather> dailyForecasts = {};
+    for (var f in forecast) {
+      if (!dailyForecasts.containsKey(f.date?.day)) {
+        dailyForecasts[f.date!.day] = f;
+      }
+    }
+    final dailyList = dailyForecasts.values.toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '6-Day Forecast',
+          '5-Day Forecast', // Corrected from 6-day as per package
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey[800]),
         ),
         SizedBox(height: 16),
         SizedBox(
-          height: 100, // Constrain the height of the GridView
+          height: 100,
           child: GridView.builder(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 6,
+              crossAxisCount: 5, // 5 days
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
               childAspectRatio: 0.75,
             ),
-            itemCount: forecast.length > 6 ? 6 : forecast.length,
+            itemCount: dailyList.length > 5 ? 5 : dailyList.length,
             itemBuilder: (context, index) {
-              final dayForecast = forecast[index];
+              final dayForecast = dailyList[index];
               return _ForecastCard(
-                day: DateFormat('EEE').format(dayForecast.date),
-                icon: _getIconForCondition(dayForecast.mainCondition),
-                temperature: dayForecast.tempMax.toStringAsFixed(0) + '°',
-                isHighlighted: index == 1, // Highlight Tuesday
+                day: DateFormat('EEE').format(dayForecast.date!),
+                icon: _getIconForCondition(dayForecast.weatherMain),
+                temperature: '${dayForecast.temperature?.celsius?.toStringAsFixed(0)}°',
+                isHighlighted: index == 1,
               ).animate().fadeIn(delay: (index * 100).ms).moveY(begin: 20, end: 0);
             },
           ),
@@ -92,24 +104,12 @@ class _ForecastCard extends StatelessWidget {
         children: [
           Text(
             day,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: isHighlighted ? Colors.white : Colors.grey[700],
-            ),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isHighlighted ? Colors.white : Colors.grey[700]),
           ),
-          Icon(
-            icon,
-            color: isHighlighted ? Colors.white : Colors.blue[500],
-            size: 24,
-          ),
+          Icon(icon, color: isHighlighted ? Colors.white : Colors.blue[500], size: 24),
           Text(
             temperature,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isHighlighted ? Colors.white : Colors.grey[800],
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isHighlighted ? Colors.white : Colors.grey[800]),
           ),
         ],
       ),
