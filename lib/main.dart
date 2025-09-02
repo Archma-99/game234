@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
+import 'services/notification_service.dart';
 
-void main() {
+Future<void> main() async {
+  // Ensure that plugin services are initialized so that `availableCameras()`
+  // can be called before `runApp()`
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize the notification service
+  await NotificationService.init();
+
   runApp(MyApp());
 }
 

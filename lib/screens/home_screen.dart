@@ -4,6 +4,8 @@ import '../models/weather_model.dart';
 import '../models/forecast_model.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
+import '../services/gemini_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/forecast_list.dart';
 // TODO: import 'package:intl/intl.dart'; // Add to pubspec.yaml for date formatting
 
@@ -14,9 +16,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
+  final GeminiService _geminiService = GeminiService();
   Weather? _weather;
   List<Forecast> _forecast = [];
+  String _aiAdvice = '';
   bool _isLoading = true;
+  bool _isFetchingAdvice = false;
   String _errorMessage = '';
 
   @override
@@ -29,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
+      _aiAdvice = '';
     });
     try {
       final coordinates = await _apiService.getCoordinates(cityName);
@@ -37,22 +43,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final weatherData = await _apiService.getWeatherData(lat, lon);
 
+      final newWeather = Weather.fromJson(weatherData['current'], cityName);
+      final dailyData = weatherData['daily'] as List;
+      final newForecast = dailyData.map((d) => Forecast.fromJson(d)).toList();
+      if (newForecast.isNotEmpty) {
+        newForecast.removeAt(0);
+      }
+
       setState(() {
-        _weather = Weather.fromJson(weatherData['current'], cityName);
-
-        final dailyData = weatherData['daily'] as List;
-        _forecast = dailyData.map((d) => Forecast.fromJson(d)).toList();
-        // Remove the current day from the forecast
-        if (_forecast.isNotEmpty) {
-          _forecast.removeAt(0);
-        }
-
+        _weather = newWeather;
+        _forecast = newForecast;
         _isLoading = false;
+        _isFetchingAdvice = true;
       });
+
+      // Fetch AI advice
+      final advice = await _geminiService.getWeatherAdvice(newWeather);
+      if (advice.isNotEmpty && !advice.contains("Could not")) {
+        await NotificationService.showWeatherAdvice('Weather Tip!', advice);
+      }
+      setState(() {
+        _aiAdvice = advice;
+        _isFetchingAdvice = false;
+      });
+
     } catch (e) {
       setState(() {
         _errorMessage = "Failed to fetch weather data for $cityName. Please try again.";
         _isLoading = false;
+        _isFetchingAdvice = false;
       });
     }
   }
@@ -168,6 +187,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            // AI Advice Section
+            _buildAiAdviceCard(),
+
             // Forecast Section
             if (_forecast.isNotEmpty)
               Column(
@@ -186,5 +208,53 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       return Text('No weather data.', style: TextStyle(color: Colors.white));
     }
+  }
+
+  Widget _buildAiAdviceCard() {
+    if (_isFetchingAdvice) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 2.0,
+              ),
+            ),
+            SizedBox(width: 10),
+            Text("Getting AI advice...", style: TextStyle(color: Colors.white70)),
+          ],
+        ),
+      );
+    }
+
+    if (_aiAdvice.isEmpty || _aiAdvice.contains("Could not")) {
+      return SizedBox.shrink(); // Don't show anything if there's no advice or an error
+    }
+
+    return Card(
+      color: Colors.white.withOpacity(0.2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            Icon(Icons.lightbulb_outline, color: Colors.yellow, size: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _aiAdvice,
+                style: TextStyle(color: Colors.white, fontSize: 15),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
