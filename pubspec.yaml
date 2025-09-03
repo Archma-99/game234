@@ -1,0 +1,36 @@
+name: weather_app
+description: A new Flutter project.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=2.19.0 <3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core
+  provider: ^6.0.5
+  http: ^0.13.5
+  intl: ^0.17.0
+  shared_preferences: ^2.0.15
+
+  # Weather & AI
+  weather: ^3.2.1
+
+  # UI & Animations
+  cupertino_icons: ^1.0.2
+  flutter_animate: ^4.1.1
+  fl_chart: ^0.55.0
+
+  # Notifications
+  flutter_local_notifications: ^9.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true

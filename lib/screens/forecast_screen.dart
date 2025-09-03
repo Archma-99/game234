@@ -165,7 +165,7 @@ class _ForecastScreenState extends State<ForecastScreen> {
           SizedBox(height: 8),
           TemperatureChart(hourlyForecast: widget.hourlyForecast),
           SizedBox(height: 24),
-          Text('Chance of Rain', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+          Text('Precipitation (mm/h)', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
           SizedBox(height: 8),
           RainChanceChart(hourlyForecast: widget.hourlyForecast),
           SizedBox(height: 24),

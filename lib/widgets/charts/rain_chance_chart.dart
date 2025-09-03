@@ -28,15 +28,12 @@ class RainChanceChart extends StatelessWidget {
           ),
           borderData: FlBorderData(show: false),
           barGroups: List.generate(chartData.length, (index) {
-            // The 'weather' package doesn't have a direct 'pop' field.
-            // We'll use rainLastHour as a proxy. This is not ideal.
-            // A value of 1mm could be a 10% chance, this is an assumption.
             final rain = chartData[index].rainLastHour ?? 0;
             return BarChartGroupData(
               x: index,
               barRods: [
                 BarChartRodData(
-                  toY: rain * 10,
+                  toY: rain.toDouble(),
                   color: Colors.blue[200],
                   width: 12,
                   borderRadius: const BorderRadius.only(

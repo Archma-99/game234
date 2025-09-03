@@ -73,6 +73,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showThemeDialog() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Select App Theme'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                title: const Text('System'),
+                value: 'System',
+                groupValue: _appTheme,
+                onChanged: (value) {
+                  if (value != null) {
+                    themeProvider.setTheme(value);
+                    _loadSettings();
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('Light'),
+                value: 'Light',
+                groupValue: _appTheme,
+                onChanged: (value) {
+                  if (value != null) {
+                    themeProvider.setTheme(value);
+                    _loadSettings();
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('Dark'),
+                value: 'Dark',
+                groupValue: _appTheme,
+                onChanged: (value) {
+                  if (value != null) {
+                    themeProvider.setTheme(value);
+                    _loadSettings();
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader("General"),
           _buildSettingRow("Temperature Unit", _tempUnit, _showTemperatureUnitDialog),
           _buildSettingRow("Wind Speed Format", _windSpeedFormat, _showWindSpeedUnitDialog),
-          _buildSettingRow("Language", "English", () {}), // TODO: Implement Language selection
+          _buildSettingRow("Language", "English (Not implemented)", () {}),
           _buildSettingRow("App Theme", _appTheme, _showThemeDialog),
           SizedBox(height: 16),
           _buildSectionHeader("Notifications"),
@@ -158,12 +211,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSettingRow(String title, String subtitle, VoidCallback onTap) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600])),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+    return InkWell(
       onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
+                SizedBox(height: 2),
+                Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+              ],
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+          ],
+        ),
+      ),
     );
   }
 

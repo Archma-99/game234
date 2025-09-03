@@ -9,11 +9,11 @@ import 'package:weather/weather.dart';
 
 class GeminiService {
   // TODO: Replace with your actual Gemini API key
-  static const _apiKey = "YOUR_GEMINI_API_KEY";
+  static const String apiKey = "YOUR_GEMINI_API_KEY";
   static const String _baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
 
   Future<String> getWeatherAdvice(Weather weather) async {
-    final url = Uri.parse("$_baseUrl?key=$_apiKey");
+    final url = Uri.parse("$_baseUrl?key=$apiKey");
 
     final prompt = """
     Today's weather:
@@ -55,7 +55,7 @@ class GeminiService {
   }
 
   Future<String> getMultiDayAdvice(List<Weather> forecasts) async {
-    final url = Uri.parse("$_baseUrl?key=$_apiKey");
+    final url = Uri.parse("$_baseUrl?key=$apiKey");
 
     // Take the next 3 days for the summary
     final forecastSubset = forecasts.take(3).toList();

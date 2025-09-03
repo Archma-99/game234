@@ -1,7 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // Note: This service requires the 'flutter_local_notifications' package.
-// Add `flutter_local_notifications: ^9.0.0` (or a newer version) to your pubspec.yaml.
+// Add `flutter_local_notifications: ^9.9.1` (or a newer version) to your pubspec.yaml.
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -11,16 +11,25 @@ class NotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher'); // default icon
 
-    // TODO: Add iOS initialization settings if needed
+    final DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+      onDidReceiveLocalNotification: (id, title, body, payload) async {
+        // your call back to the UI
+      },
+    );
+
     final InitializationSettings initializationSettings =
         InitializationSettings(
       android: initializationSettingsAndroid,
-      // iOS: initializationSettingsIOS,
+      iOS: initializationSettingsIOS,
     );
 
     await _notificationsPlugin.initialize(
       initializationSettings,
-      onSelectNotification: (String? payload) async {
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
         // Handle notification tapped
       },
     );
@@ -37,8 +46,13 @@ class NotificationService {
       showWhen: false,
     );
 
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics = DarwinNotificationDetails();
+
     const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
+        NotificationDetails(
+          android: androidPlatformChannelSpecifics,
+          iOS: iOSPlatformChannelSpecifics,
+        );
 
     await _notificationsPlugin.show(
       0,       // notification id

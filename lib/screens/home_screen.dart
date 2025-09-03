@@ -177,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               SizedBox(height: 16),
               Text(
-                '${_weather!.temperature?.celsius?.toStringAsFixed(0) ?? ''}°C',
+                '${_getFormattedTemperature()}°${settingsService.temperatureUnit == 'Celsius' ? 'C' : 'F'}',
                 style: TextStyle(fontSize: 96, fontWeight: FontWeight.w300, color: Colors.grey[800]),
               ),
               Image.network(
@@ -221,6 +221,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
       ],
     );
+  }
+
+  String _getFormattedTemperature() {
+    if (_weather == null) return '';
+    if (settingsService.temperatureUnit == 'Celsius') {
+      return _weather!.temperature!.celsius!.toStringAsFixed(0);
+    } else {
+      return _weather!.temperature!.fahrenheit!.toStringAsFixed(0);
+    }
   }
 
   Widget _buildAiAdviceCard() {
