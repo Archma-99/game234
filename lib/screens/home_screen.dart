@@ -163,11 +163,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: [
         Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _weather!.areaName ?? '',
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _weather!.areaName ?? '',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.grey[800]),
               ),
               SizedBox(height: 4),
