@@ -27,6 +27,9 @@ dependencies:
   # Notifications
   flutter_local_notifications: ^9.9.1
 
+  # Location
+  geolocator: ^9.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:weather/weather.dart'; // Note: Add weather: ^3.2.1 to pubspec.yaml
+import 'package:weather/weather.dart';
 
 import '../main.dart'; // To access global settingsService
 import '../services/gemini_service.dart';
 import '../services/notification_service.dart';
 import '../services/weather_service.dart';
+import '../services/location_service.dart';
 import '../widgets/forecast_list.dart';
 import 'forecast_screen.dart';
 import 'settings_screen.dart';
@@ -18,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final WeatherService _weatherService = WeatherService();
   final GeminiService _geminiService = GeminiService();
+  final LocationService _locationService = LocationService();
   final TextEditingController _searchController = TextEditingController();
 
   Weather? _weather;
@@ -31,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchWeather("Tokyo");
+    _determinePositionAndFetchWeather();
   }
 
   @override
@@ -40,7 +42,38 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchWeather(String cityName) async {
+  Future<void> _determinePositionAndFetchWeather() async {
+    try {
+      final position = await _locationService.getCurrentPosition();
+      _fetchWeatherByCoord(position.latitude, position.longitude);
+    } catch (e) {
+      print("Location error: $e");
+      // Fallback to default city if location fails
+      _fetchWeatherByCity("Tokyo");
+    }
+  }
+
+  Future<void> _fetchWeatherByCoord(double lat, double lon) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+      _aiAdvice = '';
+    });
+    try {
+      final results = await Future.wait([
+        _weatherService.getCurrentWeatherByCoord(lat, lon),
+        _weatherService.getFiveDayForecastByCoord(lat, lon),
+      ]);
+      _updateWeatherState(results[0] as Weather, results[1] as List<Weather>);
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Could not fetch weather for your location.";
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchWeatherByCity(String cityName) async {
     if (cityName.isEmpty) return;
     setState(() {
       _isLoading = true;
@@ -48,47 +81,39 @@ class _HomeScreenState extends State<HomeScreen> {
       _aiAdvice = '';
     });
     try {
-      // Fetch all data in parallel
       final results = await Future.wait([
         _weatherService.getCurrentWeather(cityName),
         _weatherService.getFiveDayForecast(cityName),
       ]);
-
-      final newWeather = results[0] as Weather;
-      final newForecast = results[1] as List<Weather>;
-
-      setState(() {
-        _weather = newWeather;
-        _forecast = newForecast;
-        // The 5-day forecast from the package is also the hourly forecast
-        _hourlyForecast = newForecast;
-        _isLoading = false;
-        _isFetchingAdvice = true;
-      });
-
-      // AI Advice and Notifications
-      if (settingsService.dailyNotifications) {
-        final advice = await _geminiService.getWeatherAdvice(newWeather);
-        if (advice.isNotEmpty && !advice.contains("Could not")) {
-          await NotificationService.showWeatherAdvice('Weather Tip!', advice);
-        }
-        setState(() => _aiAdvice = advice);
-      } else {
-        setState(() => _aiAdvice = '');
-      }
-
-      // The `weather` package does not support severe weather alerts directly.
-      // This functionality is lost in the refactor.
-
-      setState(() => _isFetchingAdvice = false);
-
+      _updateWeatherState(results[0] as Weather, results[1] as List<Weather>);
     } catch (e) {
       setState(() {
         _errorMessage = "Could not find weather for '$cityName'.";
         _isLoading = false;
-        _isFetchingAdvice = false;
       });
     }
+  }
+
+  Future<void> _updateWeatherState(Weather newWeather, List<Weather> newForecast) async {
+    setState(() {
+      _weather = newWeather;
+      _forecast = newForecast;
+      _hourlyForecast = newForecast;
+      _isLoading = false;
+      _isFetchingAdvice = true;
+    });
+
+    if (settingsService.dailyNotifications) {
+      final advice = await _geminiService.getWeatherAdvice(newWeather);
+      if (advice.isNotEmpty && !advice.contains("Could not")) {
+        await NotificationService.showWeatherAdvice('Weather Tip!', advice);
+      }
+      if (mounted) setState(() => _aiAdvice = advice);
+    } else {
+      if (mounted) setState(() => _aiAdvice = '');
+    }
+
+    if (mounted) setState(() => _isFetchingAdvice = false);
   }
 
   @override
@@ -130,7 +155,9 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(builder: (context) => SettingsScreen()),
             ).then((_) {
               if (_weather?.areaName != null) {
-                _fetchWeather(_weather!.areaName!);
+                _fetchWeatherByCity(_weather!.areaName!);
+              } else {
+                _determinePositionAndFetchWeather();
               }
             });
           },
@@ -151,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
         contentPadding: EdgeInsets.symmetric(vertical: 16.0),
       ),
       onSubmitted: (value) {
-        _fetchWeather(value);
+        _fetchWeatherByCity(value);
         _searchController.clear();
       },
     );
@@ -168,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  _weather!.areaName ?? '',
+                  _weather!.areaName ?? 'Your Location',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.grey[800]),
               ),
               SizedBox(height: 4),

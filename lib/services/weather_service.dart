@@ -41,4 +41,24 @@ class WeatherService {
       rethrow;
     }
   }
+
+  Future<Weather> getCurrentWeatherByCoord(double lat, double lon) async {
+    try {
+      Weather weather = await _wf.currentWeatherByLocation(lat, lon);
+      return weather;
+    } catch (e) {
+      print("Error getting current weather by coord: $e");
+      rethrow;
+    }
+  }
+
+  Future<List<Weather>> getFiveDayForecastByCoord(double lat, double lon) async {
+    try {
+      List<Weather> forecast = await _wf.fiveDayForecastByLocation(lat, lon);
+      return forecast;
+    } catch (e) {
+      print("Error getting 5-day forecast by coord: $e");
+      rethrow;
+    }
+  }
 }
