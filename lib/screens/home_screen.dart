@@ -12,8 +12,10 @@ import 'forecast_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -47,7 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final position = await _locationService.getCurrentPosition();
       _fetchWeatherByCoord(position.latitude, position.longitude);
     } catch (e) {
-      print("Location error: $e");
       // Fallback to default city if location fails
       _fetchWeatherByCity("Tokyo");
     }
@@ -119,21 +120,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
               _buildTopBar(),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               _buildSearchBar(),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               Expanded(
                 child: _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator())
                   : _errorMessage.isNotEmpty
-                      ? Center(child: Text(_errorMessage, textAlign: TextAlign.center, style: TextStyle(color: Colors.red, fontSize: 16)))
+                      ? Center(child: Text(_errorMessage, textAlign: TextAlign.center, const TextStyle(color: Colors.red, fontSize: 16)))
                       : _buildWeatherView(),
               ),
             ],
@@ -171,11 +172,11 @@ class _HomeScreenState extends State<HomeScreen> {
       controller: _searchController,
       decoration: InputDecoration(
         hintText: 'Search for a city',
-        prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
+        prefixIcon: const Icon(Icons.search, color: Colors.grey),
         filled: true,
         fillColor: Colors.grey[200],
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(30.0), borderSide: BorderSide.none),
-        contentPadding: EdgeInsets.symmetric(vertical: 16.0),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
       ),
       onSubmitted: (value) {
         _fetchWeatherByCity(value);
@@ -198,33 +199,33 @@ class _HomeScreenState extends State<HomeScreen> {
                   _weather!.areaName ?? 'Your Location',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.grey[800]),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                'Chance of rain: ${(_forecast.first.rain ?? 0).toStringAsFixed(0)} mm/h',
-                style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+                'Rain last hour: ${(_forecast.first.rainLastHour ?? 0).toStringAsFixed(2)} mm',
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 '${_getFormattedTemperature()}°${settingsService.temperatureUnit == 'Celsius' ? 'C' : 'F'}',
-                style: TextStyle(fontSize: 96, fontWeight: FontWeight.w300, color: Colors.grey[800]),
+                style: const TextStyle(fontSize: 96, fontWeight: FontWeight.w300, color: Colors.grey),
               ),
               Image.network(
                 'https://openweathermap.org/img/wn/${_weather!.weatherIcon}@4x.png',
                 width: 128,
                 height: 128,
-                errorBuilder: (c, o, s) => Icon(Icons.wb_cloudy, size: 128, color: Colors.grey[400]),
+                errorBuilder: (c, o, s) => const Icon(Icons.wb_cloudy, size: 128, color: Colors.grey),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 _weather!.weatherMain ?? '',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: Colors.grey[800]),
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: Colors.grey),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'Wind: ${_weather!.windSpeed?.toStringAsFixed(1)} m/s',
-                style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               _buildAiAdviceCard(),
             ],
           ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
@@ -262,21 +263,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAiAdviceCard() {
     if (_isFetchingAdvice) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.0, color: Colors.grey[400])),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20.0),
+        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.0, color: Colors.grey)),
       );
     }
-    if (_aiAdvice.isEmpty || _aiAdvice.contains("Could not")) return SizedBox.shrink();
+    if (_aiAdvice.isEmpty || _aiAdvice.contains("Could not")) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: Colors.blue[100]?.withOpacity(0.5),
+        color: Colors.blue.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12.0),
         border: Border.all(color: Colors.blue[200]!),
       ),
       child: Center(
-        child: Text(_aiAdvice, textAlign: TextAlign.center, style: TextStyle(color: Colors.blue[800], fontWeight: FontWeight.w500, fontSize: 14)),
+        child: Text(_aiAdvice, textAlign: TextAlign.center, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w500, fontSize: 14)),
       ),
     );
   }

@@ -129,15 +129,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Color(0xFFF8F9FA),
+        backgroundColor: const Color(0xFFF8F9FA),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.grey[800]),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.grey),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('Settings', style: TextStyle(color: Colors.grey[800], fontWeight: FontWeight.bold)),
+        title: const Text('Settings', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: ListView(
@@ -148,7 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSettingRow("Wind Speed Format", _windSpeedFormat, _showWindSpeedUnitDialog),
           _buildSettingRow("Language", "English (Not implemented)", () {}),
           _buildSettingRow("App Theme", _appTheme, _showThemeDialog),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _buildSectionHeader("Notifications"),
           _buildSwitchSettingRow("Daily Forecast", "Receive daily weather updates", _dailyForecastNotification, (value) {
             settingsService.setDailyNotifications(value);
@@ -166,7 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800])),
+      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
     );
   }
 
@@ -221,12 +221,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
-                SizedBox(height: 2),
-                Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 14)),
               ],
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           ],
         ),
       ),
@@ -236,9 +236,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSwitchSettingRow(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600])),
-      trailing: Switch(value: value, onChanged: onChanged, activeColor: Colors.blue[500]),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      subtitle: Text(subtitle, style: const TextStyle(color: Colors.grey)),
+      trailing: Switch(value: value, onChanged: onChanged, activeColor: Colors.blue),
     );
   }
 }

@@ -169,7 +169,7 @@ class _ForecastScreenState extends State<ForecastScreen> {
           SizedBox(height: 8),
           RainChanceChart(hourlyForecast: widget.hourlyForecast),
           SizedBox(height: 24),
-          UvIndexGauge(uvIndex: widget.weather.uvi ?? 0.0),
+          UvIndexGauge(uvIndex: widget.weather.uvIndex ?? 0.0),
         ],
       );
     } else if (_selectedSegment == 1) { // Daily View
