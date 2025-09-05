@@ -163,9 +163,12 @@ class _ForecastScreenState extends State<ForecastScreen> {
         children: [
           Text('Temperature', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
           SizedBox(height: 8),
-          TemperatureChart(hourlyForecast: widget.hourlyForecast),
+          TemperatureChart(
+            hourlyForecast: widget.hourlyForecast,
+            screenWidth: MediaQuery.of(context).size.width,
+          ),
           SizedBox(height: 24),
-          Text('Precipitation (mm/h)', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+          Text('Precipitation (mm/h)', style: const TextStyle(color: Colors.grey, fontSize: 14)),
           SizedBox(height: 8),
           RainChanceChart(hourlyForecast: widget.hourlyForecast),
           SizedBox(height: 24),
@@ -176,9 +179,12 @@ class _ForecastScreenState extends State<ForecastScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Next 6 Days Temperature (°C)', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-          SizedBox(height: 8),
-          DailyTemperatureChart(dailyForecast: widget.dailyForecast),
+          const Text('Next 6 Days Temperature (°C)', style: TextStyle(color: Colors.grey, fontSize: 14)),
+          const SizedBox(height: 8),
+          DailyTemperatureChart(
+            dailyForecast: widget.dailyForecast,
+            screenWidth: MediaQuery.of(context).size.width,
+          ),
         ],
       );
     } else { // Weekly View

@@ -7,8 +7,9 @@ import 'package:weather/weather.dart';
 
 class DailyTemperatureChart extends StatelessWidget {
   final List<Weather> dailyForecast;
+  final double? screenWidth;
 
-  const DailyTemperatureChart({Key? key, required this.dailyForecast}) : super(key: key);
+  const DailyTemperatureChart({Key? key, required this.dailyForecast, this.screenWidth}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +26,7 @@ class DailyTemperatureChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 30,
-                interval: 1,
+                interval: (screenWidth ?? 400) < 380 ? 2 : 1, // Show fewer labels on small screens
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
                   if (index >= 0 && index < dailyForecast.length) {

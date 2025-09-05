@@ -186,18 +186,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildWeatherView() {
-    if (_weather == null) return SizedBox.shrink();
+    if (_weather == null) return const SizedBox.shrink();
 
     return Column(
       children: [
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _weather!.areaName ?? 'Your Location',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.grey[800]),
+        // This Flexible section will contain the main weather info and will shrink
+        Flexible(
+          flex: 5, // Give it more weight
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _weather!.areaName ?? 'Your Location',
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.grey),
               ),
               const SizedBox(height: 4),
               Text(
@@ -205,15 +206,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 16),
-              Text(
-                '${_getFormattedTemperature()}°${settingsService.temperatureUnit == 'Celsius' ? 'C' : 'F'}',
-                style: const TextStyle(fontSize: 96, fontWeight: FontWeight.w300, color: Colors.grey),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  double fontSize = constraints.maxHeight * 0.5;
+                  if (fontSize < 20) fontSize = 20;
+                  if (fontSize > 96) fontSize = 96;
+                  return Text(
+                    '${_getFormattedTemperature()}°${settingsService.temperatureUnit == 'Celsius' ? 'C' : 'F'}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w300,
+                      color: Colors.grey,
+                      fontSize: fontSize,
+                    ),
+                  );
+                }
               ),
               Image.network(
                 'https://openweathermap.org/img/wn/${_weather!.weatherIcon}@4x.png',
-                width: 128,
-                height: 128,
-                errorBuilder: (c, o, s) => const Icon(Icons.wb_cloudy, size: 128, color: Colors.grey),
+                width: 100, // Slightly smaller base size
+                height: 100,
+                errorBuilder: (c, o, s) => const Icon(Icons.wb_cloudy, size: 100, color: Colors.grey),
               ),
               const SizedBox(height: 8),
               Text(
@@ -230,24 +242,34 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
         ),
-        if (_forecast.isNotEmpty)
-          GestureDetector(
-            onTap: () {
-              if (_weather != null && _forecast.isNotEmpty) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ForecastScreen(
-                      weather: _weather!,
-                      dailyForecast: _forecast,
-                      hourlyForecast: _hourlyForecast,
-                    ),
-                  ),
-                );
-              }
-            },
-            child: ForecastList(forecast: _forecast),
+
+        // This Flexible section will contain the forecast
+        Flexible(
+          flex: 2, // Give it less weight
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (_forecast.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    if (_weather != null && _forecast.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ForecastScreen(
+                            weather: _weather!,
+                            dailyForecast: _forecast,
+                            hourlyForecast: _hourlyForecast,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: ForecastList(forecast: _forecast),
+                ),
+            ],
           ),
+        ),
       ],
     );
   }
