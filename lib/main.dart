@@ -5,6 +5,7 @@ import 'services/notification_service.dart';
 import 'services/settings_service.dart';
 import 'providers/theme_provider.dart';
 import 'services/gemini_service.dart';
+import 'utils/theme.dart';
 
 final settingsService = SettingsService();
 
@@ -42,16 +43,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Weather App',
       themeMode: themeProvider.themeMode,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: Color(0xFFF8F9FA),
-      ),
-      darkTheme: ThemeData(
-        primarySwatch: Colors.blue,
-        brightness: Brightness.dark,
-      ),
-      home: SplashScreen(),
+      theme: AppThemes.lightTheme,
+      darkTheme: AppThemes.darkTheme,
+      home: const SplashScreen(),
     );
   }
 }

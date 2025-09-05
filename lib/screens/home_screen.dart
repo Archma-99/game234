@@ -49,7 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final position = await _locationService.getCurrentPosition();
       _fetchWeatherByCoord(position.latitude, position.longitude);
     } catch (e) {
-      // Fallback to default city if location fails
       _fetchWeatherByCity("Tokyo");
     }
   }
@@ -120,7 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -134,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _errorMessage.isNotEmpty
-                      ? Center(child: Text(_errorMessage, textAlign: TextAlign.center, const TextStyle(color: Colors.red, fontSize: 16)))
+                      ? Center(child: Text(_errorMessage, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 16)))
                       : _buildWeatherView(),
               ),
             ],
@@ -149,11 +147,11 @@ class _HomeScreenState extends State<HomeScreen> {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         IconButton(
-          icon: Icon(Icons.settings, color: Colors.grey[700]),
+          icon: Icon(Icons.settings, color: Theme.of(context).iconTheme.color),
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => SettingsScreen()),
+              MaterialPageRoute(builder: (context) => const SettingsScreen()),
             ).then((_) {
               if (_weather?.areaName != null) {
                 _fetchWeatherByCity(_weather!.areaName!);
@@ -170,13 +168,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSearchBar() {
     return TextField(
       controller: _searchController,
-      decoration: InputDecoration(
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+      decoration: Theme.of(context).inputDecorationTheme.copyWith(
         hintText: 'Search for a city',
-        prefixIcon: const Icon(Icons.search, color: Colors.grey),
-        filled: true,
-        fillColor: Colors.grey[200],
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30.0), borderSide: BorderSide.none),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
       ),
       onSubmitted: (value) {
         _fetchWeatherByCity(value);
@@ -187,23 +181,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildWeatherView() {
     if (_weather == null) return const SizedBox.shrink();
+    final textTheme = Theme.of(context).textTheme;
 
     return Column(
       children: [
-        // This Flexible section will contain the main weather info and will shrink
         Flexible(
-          flex: 5, // Give it more weight
+          flex: 5,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                _weather!.areaName ?? 'Your Location',
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.grey),
-              ),
+              Text(_weather!.areaName ?? 'Your Location', style: textTheme.titleLarge),
               const SizedBox(height: 4),
               Text(
                 'Rain last hour: ${(_forecast.first.rainLastHour ?? 0).toStringAsFixed(2)} mm',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                style: textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),
               LayoutBuilder(
@@ -213,39 +204,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (fontSize > 96) fontSize = 96;
                   return Text(
                     '${_getFormattedTemperature()}°${settingsService.temperatureUnit == 'Celsius' ? 'C' : 'F'}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w300,
-                      color: Colors.grey,
-                      fontSize: fontSize,
-                    ),
+                    style: textTheme.headlineLarge?.copyWith(fontSize: fontSize),
                   );
                 }
               ),
               Image.network(
                 'https://openweathermap.org/img/wn/${_weather!.weatherIcon}@4x.png',
-                width: 100, // Slightly smaller base size
+                width: 100,
                 height: 100,
-                errorBuilder: (c, o, s) => const Icon(Icons.wb_cloudy, size: 100, color: Colors.grey),
+                errorBuilder: (c, o, s) => Icon(Icons.wb_cloudy, size: 100, color: textTheme.bodyMedium?.color),
               ),
               const SizedBox(height: 8),
-              Text(
-                _weather!.weatherMain ?? '',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: Colors.grey),
-              ),
+              Text(_weather!.weatherMain ?? '', style: textTheme.headlineMedium),
               const SizedBox(height: 8),
-              Text(
-                'Wind: ${_weather!.windSpeed?.toStringAsFixed(1)} m/s',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
-              ),
+              Text('Wind: ${_weather!.windSpeed?.toStringAsFixed(1)} m/s', style: textTheme.bodyMedium),
               const SizedBox(height: 16),
               _buildAiAdviceCard(),
             ],
           ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
         ),
-
-        // This Flexible section will contain the forecast
         Flexible(
-          flex: 2, // Give it less weight
+          flex: 2,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -287,19 +266,25 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_isFetchingAdvice) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 20.0),
-        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.0, color: Colors.grey)),
+        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.0)),
       );
     }
     if (_aiAdvice.isEmpty || _aiAdvice.contains("Could not")) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: colorScheme.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(color: Colors.blue[200]!),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
       ),
       child: Center(
-        child: Text(_aiAdvice, textAlign: TextAlign.center, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w500, fontSize: 14)),
+        child: Text(
+          _aiAdvice,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w500, fontSize: 14),
+        ),
       ),
     );
   }
